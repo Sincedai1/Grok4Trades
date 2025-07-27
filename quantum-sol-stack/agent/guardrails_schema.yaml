@@ -1,0 +1,105 @@
+# QuantumSol Guardrails Configuration
+# This file defines the safety and operational boundaries for the trading system
+
+# Global Risk Parameters
+risk_parameters:
+  max_daily_loss_percent: 3.0  # Maximum allowed daily loss before kill switch
+  max_drawdown_percent: 10.0    # Maximum drawdown before kill switch
+  max_position_size_usd: 10000  # Maximum position size in USD
+  max_leverage: 3.0             # Maximum allowed leverage
+  min_confidence_threshold: 0.7 # Minimum confidence threshold for trade execution
+
+# Trading Hours Restrictions
+trading_hours:
+  enabled: true
+  timezone: UTC
+  # Trading allowed 24/7 by default, but can be restricted here
+  allowed_hours:
+    - { start: "00:00", end: "23:59", days: [0, 1, 2, 3, 4, 5, 6] }
+
+# Asset Restrictions
+asset_restrictions:
+  allowed_pairs:
+    - "SOL/USDT"
+    - "BTC/USDT"
+    - "ETH/USDT"
+  min_volume_24h: 1000000  # Minimum 24h volume in USD
+  min_liquidity: 500000    # Minimum liquidity in USD
+
+# Order Execution Rules
+order_execution:
+  max_orders_per_hour: 100
+  max_order_value_usd: 5000
+  max_slippage_percent: 1.0
+  use_take_profit: true
+  use_stop_loss: true
+  default_take_profit_percent: 5.0
+  default_stop_loss_percent: 2.0
+
+# Model Behavior Constraints
+model_constraints:
+  max_tokens: 4096
+  temperature: 0.7
+  top_p: 0.9
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+  max_retries: 3
+  timeout_seconds: 30
+
+# Alerting Configuration
+alerts:
+  email:
+    enabled: true
+    recipients:
+      - "alerts@example.com"
+  telegram:
+    enabled: true
+    chat_id: "${TELEGRAM_CHAT_ID}"
+    token: "${TELEGRAM_BOT_TOKEN}"
+  slack:
+    enabled: false
+    webhook_url: ""
+
+# Circuit Breakers
+circuit_breakers:
+  - name: "price_volatility"
+    enabled: true
+    metric: "price_volatility_24h"
+    threshold: 15.0  # Percentage
+    action: "pause_trading"
+  - name: "network_outage"
+    enabled: true
+    metric: "api_errors_per_minute"
+    threshold: 10
+    action: "emergency_stop"
+
+# Compliance Rules
+compliance:
+  kyc_aml_checks: true
+  sanctions_screening: true
+  trade_surveillance: true
+  market_manipulation_monitoring: true
+  insider_trading_prevention: true
+
+# API Rate Limits
+rate_limits:
+  exchanges:
+    kraken:
+      requests_per_second: 1
+      orders_per_second: 0.1
+    raydium:
+      requests_per_second: 5
+      orders_per_second: 1
+  internal_apis:
+    strategy_api: 10
+    risk_api: 20
+
+# Data Retention
+retention:
+  trade_history_days: 365
+  logs_days: 30
+  metrics_days: 90
+  backups:
+    enabled: true
+    frequency: "daily"
+    max_backups: 7

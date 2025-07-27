@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables
+.env
+secrets/*
+!secrets/placeholder.txt
+
+# Logs
+logs/
+*.log
+
+# Freqtrade
+freqtrade/user_data/backtest_results/
+freqtrade/user_data/data/
+freqtrade/user_data/hyperopts/
+freqtrade/user_data/notebooks/
+freqtrade/user_data/plot/
+
+# Hummingbot
+hbot/logs/
+hbot/data/
+hbot/conf/global_conf.json
+
+# Vector stores
+*.faiss
+*.pkl
+*.bin
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.bak
+*.swp
+*~

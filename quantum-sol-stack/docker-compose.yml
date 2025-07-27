@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # Agent Service
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    container_name: quantum-sol-agent
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./agent:/app
+      - ./freqtrade/user_data/strategies:/app/strategies
+      - ./monitoring/prometheus:/app/prometheus
+    ports:
+      - "8502:8502"  # Agent API
+    depends_on:
+      - prometheus
+      - grafana
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://agent:8502/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Streamlit UI
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: quantum-sol-ui
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./ui:/app
+      - ./freqtrade/user_data/strategies:/app/strategies
+    depends_on:
+      - agent
+      - grafana
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://ui:8501"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    user: "472:0"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://admin:admin@localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Prefect Server for workflow orchestration
+  prefect-server:
+    image: prefecthq/prefect:2-latest
+    container_name: prefect-server
+    command: prefect server start --host 0.0.0.0 --port 4200
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect_data:/root/.prefect
+    environment:
+      - PREFECT_API_URL=http://prefect-server:4200/api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4200/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Freqtrade bot
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    container_name: freqtrade
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./freqtrade/user_data:/freqtrade/user_data
+      - ./freqtrade/logs:/freqtrade/user_data/logs
+    command: >
+      trade
+      --strategy SmaCrossSol
+      --config /freqtrade/user_data/config.json
+      --logfile /freqtrade/user_data/logs/freqtrade.log
+    depends_on:
+      - agent
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "freqtrade"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Hummingbot
+  hummingbot:
+    image: coinalpha/hummingbot:latest
+    container_name: hummingbot
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./hbot/conf:/conf
+      - ./hbot/logs:/logs
+      - ./hbot/data:/data
+    command: >
+      /start.sh
+      --config /conf/conf_global.yml
+      --strategy pure_market_making
+      --config /conf/conf_pure_market_making_1.yml
+    tty: true
+    stdin_open: true
+    depends_on:
+      - agent
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "hummingbot"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  prefect_data:

@@ -1,0 +1,111 @@
+groups:
+- name: quantumsol-trading-alerts
+  rules:
+  # High drawdown alert
+  - alert: HighDrawdown
+    expr: quantumsol_drawdown_percent > 10
+    for: 15m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High drawdown detected ({{ $value }}%)"
+      description: "Trading strategy has a drawdown of {{ $value }}%, exceeding the 10% threshold"
+
+  # Daily loss alert
+  - alert: DailyLossLimitExceeded
+    expr: quantumsol_daily_pnl_percent < -3
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Daily loss limit exceeded ({{ $value }}%)"
+      description: "Daily PnL is {{ $value }}%, below the -3% threshold"
+
+  # Profit target not met
+  - alert: ProfitTargetNotMet
+    expr: time() - quantumsol_last_trade_timestamp_seconds > 3600 and quantumsol_daily_pnl_usd < 5000
+    for: 1h
+    labels:
+      severity: warning
+    annotations:
+      summary: "Profit target not being met"
+      description: "Daily PnL is ${{ $value }}, below the $5,000 target with no recent trades"
+
+  # High error rate
+  - alert: HighErrorRate
+    expr: rate(quantumsol_errors_total[5m]) > 5
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate detected ({{ $value }} errors/s)"
+      description: "The system is experiencing a high rate of errors"
+
+  # API rate limiting
+  - alert: APIRateLimitApproaching
+    expr: rate(quantumsol_api_requests_total[5m]) > 50
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "API rate limit approaching ({{ $value }} req/s)"
+      description: "API request rate is approaching the limit"
+
+  # Memory usage alert
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage ({{ $value }}%)"
+      description: "System memory usage is high"
+
+  # CPU usage alert
+  - alert: HighCpuUsage
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100 > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage ({{ $value }}%)"
+      description: "System CPU usage is high"
+
+  # Disk space alert
+  - alert: LowDiskSpace
+    expr: (node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"} < 20
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low disk space ({{ $value }}% free)"
+      description: "Disk space is running low on the root filesystem"
+
+  # Trading pair status
+  - alert: TradingPairDown
+    expr: quantumsol_pair_status == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Trading pair is down ({{ $labels.pair }} - {{ $labels.strategy }})"
+      description: "Trading pair {{ $labels.pair }} with strategy {{ $labels.strategy }} is not running"
+
+  # Kill switch activated
+  - alert: KillSwitchActivated
+    expr: quantumsol_kill_switch_active == 1
+    labels:
+      severity: critical
+    annotations:
+      summary: "Kill switch activated!"
+      description: "The trading kill switch has been activated, all positions should be closed"
+
+  # High latency
+  - alert: HighLatency
+    expr: quantumsol_trade_latency_seconds > 5
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High trade execution latency ({{ $value }}s)"
+      description: "Trade execution latency is higher than expected"

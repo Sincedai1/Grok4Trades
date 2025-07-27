@@ -1,0 +1,58 @@
+# Global configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+# Alert manager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# Rule files
+rule_files:
+  - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-scraping
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # QuantumSol Agent metrics
+  - job_name: 'quantumsol-agent'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['agent:8000']
+    
+  # Freqtrade metrics
+  - job_name: 'freetrade'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['freetrade:8080']
+    
+  # Hummingbot metrics
+  - job_name: 'hummingbot'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['hummingbot:9001']
+    
+  # Node exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+# Remote write configuration (optional)
+remote_write:
+  - url: 'http://thanos:10908/api/v1/receive'  # If using Thanos for long-term storage
+    queue_config:
+      max_samples_per_send: 1000
+      capacity: 10000
+      max_shards: 30
