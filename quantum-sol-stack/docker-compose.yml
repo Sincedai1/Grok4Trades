@@ -1,25 +1,46 @@
 version: '3.8'
 
 services:
+  # Redis Cache
+  redis-cache:
+    image: redis:7-alpine
+    container_name: grok4trades-cache
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    mem_limit: 1.2g
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # Agent Service
   agent:
     build:
-      context: ./agent
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: agent/Dockerfile
     container_name: quantum-sol-agent
     restart: unless-stopped
     env_file: .env
+    environment:
+      - REDIS_URL=redis://redis-cache:6379
     volumes:
       - ./agent:/app
+      - ./shared_modules:/app/shared_modules
       - ./freqtrade/user_data/strategies:/app/strategies
       - ./monitoring/prometheus:/app/prometheus
     ports:
       - "8502:8502"  # Agent API
     depends_on:
+      - redis-cache
       - prometheus
       - grafana
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://agent:8502/health')"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8502/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -28,21 +49,25 @@ services:
   # Streamlit UI
   ui:
     build:
-      context: ./ui
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ui/Dockerfile
     container_name: quantum-sol-ui
     restart: unless-stopped
     env_file: .env
+    environment:
+      - REDIS_URL=redis://redis-cache:6379
     ports:
-      - "8501:8501"
+      - "8601:8501"  # Changed from 8502:8501 to resolve port conflict
     volumes:
       - ./ui:/app
+      - ./shared_modules:/app/shared_modules
       - ./freqtrade/user_data/strategies:/app/strategies
     depends_on:
+      - redis-cache
       - agent
       - grafana
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://ui:8501"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8501"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -146,10 +171,16 @@ services:
       - ./hbot/logs:/logs
       - ./hbot/data:/data
     command: >
-      /start.sh
-      --config /conf/conf_global.yml
-      --strategy pure_market_making
-      --config /conf/conf_pure_market_making_1.yml
+      /bin/bash -c "
+      if [ ! -f /conf/conf_global.yml ]; then
+        echo 'Initializing Hummingbot configuration...';
+        hummingbot_autostart_config_files=1 /bin/bash -c 'hummingbot.py' || true;
+      fi &&
+      hummingbot_autostart_config_files=1 /bin/bash -c 'hummingbot.py \
+        --config /conf/conf_global.yml \
+        --strategy pure_market_making \
+        --config /conf/conf_pure_market_making_1.yml'
+      "
     tty: true
     stdin_open: true
     depends_on:
@@ -165,3 +196,4 @@ volumes:
   prometheus_data:
   grafana_data:
   prefect_data:
+  redis_data:

@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
@@ -10,7 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Python dependencies and explicitly install yfinance
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir yfinance>=0.2.28 && \
+    python -c "import yfinance; print(f'yfinance version: {yfinance.__version__} successfully installed')"
 
 # Copy the rest of the application
 COPY . .

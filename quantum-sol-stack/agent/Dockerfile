@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -18,7 +18,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 WORKDIR /app
 
 # Install Python dependencies
-COPY agent/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Solana CLI (for local development and testing)
@@ -26,7 +26,7 @@ RUN sh -c "$(curl -sSfL https://release.solana.com/v1.16.0/install)" \
     && export PATH="/root/.local/share/solana/install/active_release/bin:$PATH"
 
 # Copy agent code
-COPY agent/ .
+COPY . .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \

@@ -1,0 +1,64 @@
+
+services:
+  redis-cache:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    mem_limit: 1.2g
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  trading-core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: grok4trades-core
+    mem_limit: 3g
+    depends_on:
+      - redis-cache
+    environment:
+      - REDIS_URL=redis://redis-cache:6379
+      - TRADING_MODE=paper
+      - MAX_CAPITAL=100
+      - MAX_RISK_PCT=0.02
+      - EXCHANGE=binance
+      - SYMBOL=BTC/USDT
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web-dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: grok4trades-dashboard
+    ports:
+      - "8501:8501"
+    mem_limit: 1g
+    depends_on:
+      - trading-core
+    environment:
+      - REDIS_URL=redis://redis-cache:6379
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    driver: bridge

@@ -1,0 +1,13 @@
+# Core Dependencies
+ccxt==4.2.0
+pandas==2.1.4
+numpy==1.24.3
+redis==5.0.1
+python-dotenv==1.0.0
+loguru==0.7.2
+
+# Async
+asyncio==3.4.3
+asyncio-throttle==1.0.2
+
+typing-extensions==4.7.1  # Required for Python < 3.10

@@ -1,0 +1,12 @@
+# Core Dependencies
+streamlit==1.31.0
+pandas==2.1.4
+plotly==5.18.0
+redis==5.0.1
+python-dotenv==1.0.0
+
+# Data Visualization
+plotly-express==0.4.1
+
+# Utilities
+numpy==1.24.3

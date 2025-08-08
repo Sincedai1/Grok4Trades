@@ -1,0 +1,13 @@
+# Trading and Exchange APIs
+ccxt>=4.4.96,<5.0.0
+web3>=5.31.1,<7.0.0
+eth-account>=0.5.9,<1.0.0
+
+# Core Dependencies
+python-dotenv>=1.0.0
+loguru>=0.7.0
+requests>=2.31.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
