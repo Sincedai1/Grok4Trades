@@ -1,0 +1,29 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Solana Mind Trader | AI-Powered Trading Bot</title>
+    <meta name="description" content="Advanced AI-powered trading bot for Solana, leveraging GPT-4o to automate trading strategies and optimize returns." />
+    <script>
+      // Force dark mode
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light', 'system');
+      localStorage.setItem('theme', 'dark');
+    </script>
+    <style>
+      /* Immediate dark mode styling to prevent flash */
+      html, body {
+        background-color: hsl(240, 10%, 3.9%) !important;
+        color: hsl(0, 0%, 98%) !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
