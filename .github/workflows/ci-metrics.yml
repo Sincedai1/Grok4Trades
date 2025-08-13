@@ -17,6 +17,18 @@ jobs:
         with:
           python-version: "3.11"
       
+      - name: Check ports
+        run: |
+          # Ensure no processes are using our ports
+          sudo lsof -i:8000 || true
+          sudo lsof -i:8001 || true
+          sudo lsof -i:9100 || true
+          
+          # Kill any processes using these ports
+          sudo fuser -k 8000/tcp || true
+          sudo fuser -k 8001/tcp || true
+          sudo fuser -k 9100/tcp || true
+      
       - name: Install minimal dependencies
         run: |
           python -m venv .venv
@@ -29,8 +41,6 @@ jobs:
         run: |
           source .venv/bin/activate
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          
-          # Run the test script
           python test_minimal.py
       
       - name: Test full app
@@ -39,9 +49,23 @@ jobs:
           source .venv/bin/activate
           pip install -r requirements-api.txt
           
-          uvicorn app.main:app --host 0.0.0.0 --port 8001 &
-          echo "Waiting for full app server..."
-          sleep 5
+          # Start the app in the background
+          python -c '
+          import uvicorn
+          import threading
+          import time
+          from app.main import app
+          
+          # Start the server in a thread
+          server_thread = threading.Thread(
+              target=uvicorn.run,
+              args=(app,),
+              kwargs={"host": "0.0.0.0", "port": 8001},
+              daemon=True
+          )
+          server_thread.start()
+          time.sleep(5)
+          '
           
           # Test health endpoint
           echo "Testing health endpoint..."
@@ -56,10 +80,19 @@ jobs:
           echo "✅ Full app test passed"
       
       - name: Upload artifacts
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: debug-logs
           path: |
             metrics.txt
             metrics_full.txt
+            /tmp/uvicorn.log
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          # Kill any remaining processes
+          sudo fuser -k 8000/tcp || true
+          sudo fuser -k 8001/tcp || true
+          sudo fuser -k 9100/tcp || true
