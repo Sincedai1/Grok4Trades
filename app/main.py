@@ -13,6 +13,7 @@ try:
     OTEL_AVAILABLE = True
 except ImportError:
     OTEL_AVAILABLE = False
+    print("OpenTelemetry not available, continuing without instrumentation")
 import time
 import json
 

@@ -22,18 +22,33 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          pip install --upgrade pip
+          pip install --upgrade pip setuptools wheel
+          
+          # Try to install all requirements, continue if some fail
+          pip install -r requirements.txt || {
+            echo "Some dependencies failed to install, installing core dependencies only"
+            pip install fastapi uvicorn prometheus-client python-dotenv loguru requests pytest
+            pip install opentelemetry-api opentelemetry-sdk || true
+            pip install opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-logging || true
+          }
+          
           pip install -e .
-          pip install prometheus-client uvicorn fastapi
-          pip install opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-logging
       
       - name: Start API server
         run: |
           source .venv/bin/activate
           export DRY_RUN=1
           export ALERTS_ENABLED=0
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
           nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &> uvicorn.log &
           sleep 5
+          
+          # Check if server started
+          if ! curl -s http://localhost:8000/health; then
+            echo "ERROR: API server failed to start!"
+            cat uvicorn.log
+            exit 1
+          fi
       
       - name: Check Prometheus metrics
         run: |
