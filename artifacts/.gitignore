@@ -1,0 +1,8 @@
+# Ignore all log files that might contain personal paths
+*.log
+uvicorn*.txt
+*_err.txt
+*_error.txt
+
+# Ignore any files with local paths
+**/Users/*
