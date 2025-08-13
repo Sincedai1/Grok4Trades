@@ -104,5 +104,9 @@ def start_metrics_server():
     start_http_server(9100)
 
 # Start metrics server in background thread
-metrics_thread = threading.Thread(target=start_metrics_server, daemon=True)
-metrics_thread.start()
+try:
+    print("Starting Prometheus metrics server on port 9100...")
+    start_http_server(9100)
+    print("✅ Metrics server started")
+except Exception as e:
+    print(f"❌ Failed to start metrics server: {e}")
