@@ -29,28 +29,9 @@ jobs:
         run: |
           source .venv/bin/activate
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          # First test the minimal app
-          uvicorn test_minimal:app --host 0.0.0.0 --port 8000 &
-          echo "Waiting for server..."
-          sleep 5
           
-          # Test health endpoint
-          echo "Testing health endpoint..."
-          HEALTH_RESPONSE=$(curl -s http://localhost:8000/health)
-          echo "Health response: $HEALTH_RESPONSE"
-          
-          # Test metrics
-          echo "Testing metrics..."
-          curl -s http://localhost:9100/metrics > metrics.txt
-          cat metrics.txt
-          
-          # Check for metrics
-          if ! grep -q "g4t_requests_total" metrics.txt; then
-            echo "ERROR: Metrics not found"
-            exit 1
-          fi
-          
-          echo "✅ Minimal app test passed"
+          # Run the test script
+          python test_minimal.py
       
       - name: Test full app
         if: success()
