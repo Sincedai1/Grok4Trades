@@ -7,8 +7,12 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.logging import LoggingInstrumentor
+try:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
 import time
 import json
 
@@ -28,7 +32,8 @@ async def lifespan(app: FastAPI):
     print(f"Starting Grok4Trades API - DRY_RUN: {DRY_RUN}, ALERTS: {ALERTS_ENABLED}")
     
     # Initialize instrumentation
-    LoggingInstrumentor().instrument()
+    if OTEL_AVAILABLE:
+        LoggingInstrumentor().instrument()
     
     yield
     
@@ -43,7 +48,8 @@ app = FastAPI(
 )
 
 # Instrument FastAPI
-FastAPIInstrumentor.instrument_app(app)
+if OTEL_AVAILABLE:
+    FastAPIInstrumentor.instrument_app(app)
 
 @app.get("/")
 async def root():
